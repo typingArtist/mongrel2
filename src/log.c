@@ -90,7 +90,7 @@ static void *Log_internal_thread(void *spec)
        rc = zmq_msg_init(&msg);
        check(rc == 0, "Failed to initialize message.");
 
-       rc = zmq_recv(socket, &msg, 0);
+       rc = zmq_recvmsg(socket, &msg, 0);
        if(rc == -1 && errno == ETERM) {
            // The ZMQ context has been terminated, must be shutting down.
            break;
@@ -185,7 +185,7 @@ int Log_poison_workers()
     int rc = zmq_msg_init_size(&msg, 0);
     check(rc == 0, "Could not create zmq message.");
     
-    rc = zmq_send(LOG_SOCKET, &msg, 0);
+    rc = zmq_sendmsg(LOG_SOCKET, &msg, 0);
     check(rc == 0, "Could not send message");
 
     rc = zmq_msg_close(&msg);
@@ -265,7 +265,7 @@ int Log_request(Connection *conn, int status, int size)
             free_log_msg, log_data);
     check(rc == 0, "Could not craft message for log message '%s'.", bdata(log_data));
     
-    rc = zmq_send(LOG_SOCKET, &msg, 0);
+    rc = zmq_sendmsg(LOG_SOCKET, &msg, 0);
     check(rc == 0, "Could not send log message to socket.");
 
     log_data = NULL; // that way errors from above can clean the log_data
