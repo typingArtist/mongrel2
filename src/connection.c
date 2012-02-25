@@ -835,10 +835,10 @@ int Connection_accept(Connection *conn)
     check(Register_connect(IOBuf_fd(conn->iob), (void*)conn) != -1,
             "Failed to register connection.");
 
-    check(taskcreate(Connection_task, conn, CONNECTION_STACK) != -1,
-            "Failed to create connection task.");
-    
     check(taskcreate(Connection_deliver_task, conn, CONNECTION_STACK) != -1,
+            "Failed to create connection deliver task.");
+
+    check(taskcreate(Connection_task, conn, CONNECTION_STACK) != -1,
             "Failed to create connection task.");
     return 0;
 error:
