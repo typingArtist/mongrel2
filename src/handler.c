@@ -294,7 +294,7 @@ void *Handler_send_create(const char *send_spec, const char *identity)
         rc = zmq_bind(handler_socket, send_spec);
     }
 
-    check(bind_attempts > 0, "Too many bind attempts for handler %s", send_spec);
+    check(rc == 0, "Too many bind attempts for handler %s", send_spec);
 
     return handler_socket;
 
@@ -320,7 +320,7 @@ void *Handler_recv_create(const char *recv_spec, const char *uuid)
         rc = zmq_bind(listener_socket, recv_spec);
     }
 
-    check(bind_attempts > 0, "Too many bind attempts for handler %s", recv_spec);
+    check(rc == 0, "Too many bind attempts for handler %s", recv_spec);
 
     return listener_socket;
 
