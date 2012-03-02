@@ -161,15 +161,17 @@ error:
 static inline int handler_recv_parse(Handler *handler, HandlerParser *parser)
 {
     zmq_msg_t *inmsg = NULL;
+    int initialized = 0;
+
     check(handler->running, "Called while handler wasn't running, that's not good.");
 
     inmsg = calloc(sizeof(zmq_msg_t), 1);
-    int rc = 0;
-
     check_mem(inmsg);
 
-    rc = zmq_msg_init(inmsg);
+    int rc = zmq_msg_init(inmsg);
     check(rc == 0, "Failed to initialize message.");
+
+    initialized = 1;
 
     taskstate("recv");
 
@@ -188,10 +190,8 @@ static inline int handler_recv_parse(Handler *handler, HandlerParser *parser)
     return 0;
 
 error:
-    if(inmsg) {
-        zmq_msg_close(inmsg);
-        free(inmsg);
-    }
+    if (initialized) zmq_msg_close(inmsg);
+    free(inmsg);
     return -1;
 }
 
@@ -258,18 +258,23 @@ int Handler_deliver(void *handler_socket, char *buffer, size_t len)
 {
     int rc = 0;
     zmq_msg_t msg;
+    int initialized = 0;
 
     rc = zmq_msg_init_data(&msg, buffer, len, cstr_free, NULL);
     check(rc == 0, "Failed to init 0mq message data.");
+    initialized = 1;
 
     rc = mqsend(handler_socket, &msg, 0);
     check(rc == 0, "Failed to deliver 0mq message to handler.");
 
-    // zeromq owns the ram now
+    zmq_msg_close(&msg);
+    // zeromq owns the ram now and it's gonna free it via cstr_free later on its own
     return 0;
 
 error:
-    free(buffer); // we own the ram now
+    if (initialized) zmq_msg_close(&msg);
+    // we own the ram now and we're freeing it now
+    free(buffer);
     return -1;
 }
 
@@ -298,6 +303,7 @@ void *Handler_send_create(const char *send_spec, const char *identity)
     return handler_socket;
 
 error:
+    if (handler_socket) zmq_close(handler_socket);
     return NULL;
 }
 
@@ -309,6 +315,7 @@ void *Handler_recv_create(const char *recv_spec, const char *uuid)
 
     int rc = zmq_setsockopt(listener_socket, ZMQ_SUBSCRIBE, uuid, strlen(uuid));
     check(rc == 0, "Failed to subscribe listener socket: %s", recv_spec);
+
     log_info("Binding listener SUB socket %s subscribed to: %s", recv_spec, uuid);
 
     rc = zmq_bind(listener_socket, recv_spec);
@@ -324,6 +331,7 @@ void *Handler_recv_create(const char *recv_spec, const char *uuid)
     return listener_socket;
 
 error:
+    if (listener_socket) zmq_close(listener_socket);
     return NULL;
 }
 
