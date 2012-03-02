@@ -351,9 +351,9 @@ Handler *Handler_create(bstring send_spec, bstring send_ident,
     handler->protocol = HANDLER_PROTO_JSON;
 
     return handler;
-error:
 
-    if(handler) free(handler);
+error:
+    free(handler);
     return NULL;
 }
 
