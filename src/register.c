@@ -85,6 +85,7 @@ static inline void Register_clear(Registration *reg)
             RadixMap_delete(REG_ID_TO_FD, el);
         }
     }
+    reg->id = UINT32_MAX;
 }
 
 int Register_connect(int fd, Connection* data)
