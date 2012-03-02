@@ -259,9 +259,6 @@ int Handler_deliver(void *handler_socket, char *buffer, size_t len)
     int rc = 0;
     zmq_msg_t msg;
 
-    rc = zmq_msg_init(&msg);
-    check(rc == 0, "Failed to initialize 0mq message to send.");
-
     rc = zmq_msg_init_data(&msg, buffer, len, cstr_free, NULL);
     check(rc == 0, "Failed to init 0mq message data.");
 
