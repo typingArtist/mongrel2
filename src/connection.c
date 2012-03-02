@@ -85,8 +85,14 @@ error:
 
 static inline int Connection_deliver_enqueue(Connection *conn, bstring b)
 {
-    check_debug(conn->deliverPost-conn->deliverAck < DELIVER_OUTSTANDING_MSGS, "Too many outstanding messages") ;
-    conn->deliverRing[conn->deliverPost++%DELIVER_OUTSTANDING_MSGS]=b;
+    unsigned deliverPost_next = conn->deliverPost + 1;
+    if (deliverPost_next == DELIVER_OUTSTANDING_MSGS) {
+        deliverPost_next = 0;
+    }
+    check_debug(deliverPost_next != conn->deliverAck, "Too many outstanding messages") ;
+    conn->deliverRing[conn->deliverPost]=b;
+    // insert a write memory barrier here for real threads
+    conn->deliverPost = deliverPost_next;
     taskwakeup(&conn->deliverRendez);
     return 0;
 
@@ -96,9 +102,19 @@ error:
 
 static inline bstring Connection_deliver_dequeue(Connection *conn)
 {
+    bstring ret;
+    unsigned deliverAck_next;
     while(1) {
-        if(conn->deliverPost-conn->deliverAck) {
-            return conn->deliverRing[conn->deliverAck++%DELIVER_OUTSTANDING_MSGS];
+        if (conn->deliverPost!=conn->deliverAck) {
+            deliverAck_next = conn->deliverAck + 1;
+            if (deliverAck_next == DELIVER_OUTSTANDING_MSGS) {
+                deliverAck_next = 0;
+            }
+            // irsert a read memory barrier here for real threads
+            ret = conn->deliverRing[conn->deliverAck];
+            // insert a write memory barrier here for real threads
+            conn->deliverAck = deliverAck_next;
+            return ret;
         }
         tasksleep(&conn->deliverRendez);
     }
