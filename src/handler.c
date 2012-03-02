@@ -278,6 +278,8 @@ void *Handler_send_create(const char *send_spec, const char *identity)
 {
     int bind_attempts = 10;
     void *handler_socket = mqsocket(ZMQ_PUSH);
+    check(handler_socket, "Can't create ZMQ_PUSH socket");
+
     int rc = zmq_setsockopt(handler_socket, ZMQ_IDENTITY, identity, strlen(identity));
     check(rc == 0, "Failed to set handler socket %s identity %s", send_spec, identity);
 
