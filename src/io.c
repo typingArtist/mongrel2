@@ -669,11 +669,10 @@ error:
 int IOBuf_register_disconnect(IOBuf *buf)
 {
     int rc=0;
-    if(IOBuf_fd(buf)>0) {
-        rc= Register_disconnect(IOBuf_fd(buf));
-        return rc;
+    if(buf && IOBuf_fd(buf)>=0) {
+        rc = Register_disconnect(IOBuf_fd(buf));
     }
-    return 0;
+    return rc;
 }
 
 
