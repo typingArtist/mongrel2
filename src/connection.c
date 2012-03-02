@@ -558,7 +558,7 @@ static inline int close_or_error(Connection *conn, int next)
     conn->proxy_iob = NULL;
 
     if (IOBuf_fd(conn->iob) >= 0)
-        check_debug(Register_disconnect(IOBuf_fd(conn->iob)) != -1,
+        check_debug(IOBuf_register_disconnect(conn->iob) != -1,
                 "Register disconnect didn't work for %d", IOBuf_fd(conn->iob));
 
 error:
