@@ -280,7 +280,6 @@ static inline int Server_accept(int listen_fd)
     int rport = -1;
     char remote[IPADDR_SIZE];
     int rc = 0;
-    Connection *conn = NULL;
 
     cfd = netaccept(listen_fd, remote, &rport);
     check(cfd >= 0, "Failed to accept on listening socket.");
@@ -288,17 +287,12 @@ static inline int Server_accept(int listen_fd)
     Server *srv = Server_queue_latest();
     check(srv != NULL, "Failed to get a server from the configured queue.");
 
-    conn = Connection_create(srv, cfd, rport, remote);
-    check(conn != NULL, "Failed to create connection after accept.");
-
-    rc = Connection_accept(conn);
+    rc = Connection_create(srv, cfd, rport, remote);
     check(rc == 0, "Failed to register connection, overloaded.");
 
     return 0;
 
 error:
-
-    if(conn != NULL) Connection_destroy(conn);
     return -1;
 }
 

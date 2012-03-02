@@ -785,11 +785,11 @@ StateActions CONN_ACTIONS = {
     .websocket_established = connection_websocket_established
 };
 
-
-
-void Connection_destroy(Connection *conn)
+static void Connection_destroy(Connection *conn)
 {
-    if(conn) {
+    if (conn) {
+        IOBuf_register_disconnect(conn->iob);
+
         Request_destroy(conn->req);
         conn->req = NULL;
         if(conn->client) free(conn->client);
@@ -806,19 +806,22 @@ void Connection_destroy(Connection *conn)
 }
 
 
-Connection *Connection_create(Server *srv, int fd, int rport,
+int Connection_create(Server *srv, int fd, int rport,
                               const char *remote)
 {
     Connection *conn = calloc(sizeof(Connection),1);
     check_mem(conn);
 
-    conn->req = Request_create();
+    conn->iob = NULL;
     conn->proxy_iob = NULL;
-    conn->rport = rport;
     conn->client = NULL;
+    conn->req = Request_create();
+    conn->rport = rport;
     conn->close = 0;
     conn->type = 0;
     conn->filter_state = NULL;
+    conn->deliverPost = 0;
+    conn->deliverAck = 0;
 
     memcpy(conn->remote, remote, IPADDR_SIZE);
     conn->remote[IPADDR_SIZE] = '\0';
@@ -836,19 +839,10 @@ Connection *Connection_create(Server *srv, int fd, int rport,
         ssl_set_ciphersuites(&conn->iob->ssl, srv->ciphers);
     } else {
         conn->iob = IOBuf_create(BUFFER_SIZE, fd, IOBUF_SOCKET);
+        check(conn->iob != NULL, "Failed to create the SOCKET IOBuf.");
     }
 
-    return conn;
-
-error:
-    Connection_destroy(conn);
-    return NULL;
-}
-
-
-int Connection_accept(Connection *conn)
-{
-    check(Register_connect(IOBuf_fd(conn->iob), (void*)conn) != -1,
+    check(Register_connect(fd, (void*)conn) != -1,
             "Failed to register connection.");
 
     check(taskcreate(Connection_deliver_task, conn, CONNECTION_STACK) != -1,
@@ -856,13 +850,13 @@ int Connection_accept(Connection *conn)
 
     check(taskcreate(Connection_task, conn, CONNECTION_STACK) != -1,
             "Failed to create connection task.");
+
     return 0;
+
 error:
-    IOBuf_register_disconnect(conn->iob);
+    Connection_destroy(conn);
     return -1;
 }
-
-
 
 void Connection_task(void *v)
 {

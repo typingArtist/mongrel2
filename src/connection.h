@@ -77,12 +77,8 @@ typedef struct Connection {
     Rendez deliverRendez;
 } Connection;
 
-void Connection_destroy(Connection *conn);
-
-Connection *Connection_create(Server *srv, int fd, int rport,
+int Connection_create(Server *srv, int fd, int rport,
                               const char *remote);
-
-int Connection_accept(Connection *conn);
 
 void Connection_task(void *v);
 
