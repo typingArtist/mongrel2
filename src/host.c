@@ -90,6 +90,7 @@ Host *Host_create(bstring name, bstring matching)
     return host;
 
 error:
+    Host_destroy(host);
     return NULL;
 }
 
@@ -98,6 +99,7 @@ void Host_destroy(Host *host)
 {
     if(host) {
         bdestroy(host->name);
+        bdestroy(host->matching);
         RouteMap_destroy(host->routes);
         h_free(host);
     }
@@ -130,6 +132,7 @@ int Host_add_backend(Host *host, bstring path, BackendType type, void *target)
     return 0;
     
 error:
+    free(backend);
     return -1;
 }
 

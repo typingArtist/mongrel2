@@ -109,6 +109,7 @@ Route *RouteMap_insert_base(RouteMap *map, bstring prefix, bstring pattern)
     return route;
 
 error:
+    if (route) h_free(route);
     return NULL;
 }
 
@@ -138,6 +139,8 @@ int RouteMap_insert(RouteMap *map, bstring pattern, void *data)
     return 0;
 
 error:
+    bdestroy(prefix);
+    bdestroy(pattern);
     return -1;
 }
 
@@ -170,6 +173,8 @@ int RouteMap_insert_reversed(RouteMap *map, bstring pattern, void *data)
     return 0;
   
 error:
+    bdestroy(reversed_prefix);
+    bdestroy(pattern);
     return -1;
 }
 
